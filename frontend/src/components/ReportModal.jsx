@@ -3,21 +3,25 @@ import { useState } from "react";
 function getDueStatus(task) {
   if (!task.dueDate) return null;
   const now = new Date(), due = new Date(task.dueDate);
-  if (task.status==="completed") return task.completedAt && new Date(task.completedAt)<=due ? "on-time" : "late";
-  if (due<now) return "overdue";
-  return due-now < 86400000 ? "due-soon" : "ok";
+  if (task.status==="completed") {
+    const completedAt = new Date(task.completedAt);
+    return completedAt <= due ? "on-time" : "late";
+  }
+  if (due < now) return "overdue";
+  const hoursDiff = (due - now) / 3600000;
+  return hoursDiff < 24 ? "due-soon" : "ok";
 }
 
 function minsLate(task) {
-  if (!task.dueDate||task.status!=="completed"||!task.completedAt) return null;
-  const diff = new Date(task.completedAt)-new Date(task.dueDate);
-  return diff>0 ? Math.round(diff/60000) : null;
+  if (!task.dueDate || task.status!=="completed" || !task.completedAt) return null;
+  const diff = new Date(task.completedAt) - new Date(task.dueDate);
+  return diff > 0 ? Math.round(diff/60000) : null;
 }
 
 function fmtDur(mins) {
-  if (mins<60) return `${mins}m late`;
-  const h=Math.floor(mins/60), m=mins%60;
-  return `${h}h${m?` ${m}m`:""} late`;
+  if (mins < 60) return `${mins}m late`;
+  const h = Math.floor(mins/60), m = mins%60;
+  return `${h}h${m ? ` ${m}m` : ""} late`;
 }
 
 function fmtDate(d) {
@@ -31,37 +35,84 @@ function fmtDateTime(d) {
 
 export default function ReportModal({ open, onClose, tasks, isDark, user }) {
   const [tab, setTab] = useState("overview");
-  const c = (l,d)=>isDark?d:l;
+  const c = (l,d) => isDark ? d : l;
 
   if (!open) return null;
 
   const total     = tasks.length;
   const done      = tasks.filter(t=>t.status==="completed").length;
-  const pending   = total-done;
-  const pct       = total>0?Math.round((done/total)*100):0;
+  const pending   = total - done;
+  
+  // Calculate dynamic completion percentage
+  const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
+  
   const overdue   = tasks.filter(t=>getDueStatus(t)==="overdue");
   const lateComp  = tasks.filter(t=>getDueStatus(t)==="late");
   const onTime    = tasks.filter(t=>getDueStatus(t)==="on-time");
   const withDue   = tasks.filter(t=>t.dueDate);
-
+  const noDueTasks = tasks.filter(t=>!t.dueDate);
+  const completedWithDue = tasks.filter(t=>t.status==="completed" && t.dueDate);
+  
   // avg completion time (in hours) from created to completed
-  const compTasks = tasks.filter(t=>t.status==="completed"&&t.completedAt);
-  const avgCompH  = compTasks.length>0
+  const compTasks = tasks.filter(t=>t.status==="completed" && t.completedAt);
+  const avgCompH  = compTasks.length > 0
     ? Math.round(compTasks.reduce((s,t)=>(s+(new Date(t.completedAt)-new Date(t.createdAt))),0)/compTasks.length/3600000)
     : null;
 
   // oldest pending
   const oldestPending = tasks.filter(t=>t.status==="pending").sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt))[0];
 
-  const score = total===0 ? 0 : Math.max(0, Math.round(
-    (done/total)*60 +
-    (withDue.length>0?(onTime.length/withDue.length)*30:30) -
-    (overdue.length*5) -
-    (lateComp.length*3)
-  ));
+  // Dynamic scoring system
+  let score = 0;
+  let maxScore = 100;
+  
+  if (total > 0) {
+    // 1. Completion Rate (max 50 points)
+    const completionScore = (done / total) * 50;
+    score += completionScore;
+    
+    // 2. On-time performance (max 30 points) - only for tasks with due dates
+    if (withDue.length > 0) {
+      const onTimeRate = onTime.length / withDue.length;
+      const onTimeScore = onTimeRate * 30;
+      score += onTimeScore;
+    } else if (noDueTasks.length > 0 && total > 0) {
+      // If no due dates, allocate points based on completion
+      score += 15;
+    }
+    
+    // 3. Penalty for overdue tasks (max -15 points)
+    const overduePenalty = Math.min(15, overdue.length * 3);
+    score -= overduePenalty;
+    
+    // 4. Penalty for late completions (max -10 points)
+    const latePenalty = Math.min(10, lateComp.length * 2);
+    score -= latePenalty;
+    
+    // 5. Bonus for perfect record (max +5 points)
+    if (done === total && overdue.length === 0 && lateComp.length === 0) {
+      score += 5;
+    }
+    
+    // 6. Early completion bonus (max +5 points)
+    if (compTasks.length > 0) {
+      const earlyCompletions = compTasks.filter(t => {
+        if (!t.dueDate) return false;
+        const completedAt = new Date(t.completedAt);
+        const dueDate = new Date(t.dueDate);
+        const hoursEarly = (dueDate - completedAt) / 3600000;
+        return hoursEarly > 24; // Completed more than 24 hours early
+      }).length;
+      const earlyBonus = Math.min(5, Math.floor(earlyCompletions * 1.5));
+      score += earlyBonus;
+    }
+    
+    // Ensure score stays within 0-100 range
+    score = Math.max(0, Math.min(100, Math.round(score)));
+  }
 
-  const scoreColor = score>=80?"#10b981":score>=50?"#f59e0b":"#ef4444";
-  const scoreLabel = score>=80?"Excellent":score>=60?"Good":score>=40?"Fair":"Needs Work";
+  const scoreColor = score >= 85 ? "#10b981" : score >= 70 ? "#34d399" : score >= 50 ? "#f59e0b" : score >= 30 ? "#f97316" : "#ef4444";
+  const scoreLabel = score >= 85 ? "Excellent" : score >= 70 ? "Good" : score >= 50 ? "Fair" : score >= 30 ? "Needs Work" : "Critical";
 
   const tabs = ["overview","timeline","issues"];
 
@@ -74,7 +125,7 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
         </div>
       </div>
       <p style={{ fontSize:"20px", fontWeight:800, fontFamily:"'Playfair Display',serif", color:c("#0f172a","#f1f5f9"), margin:"0 0 2px" }}>{val}</p>
-      {sub&&<p style={{ fontSize:"11px", color:c("#94a3b8","#475569"), margin:0 }}>{sub}</p>}
+      {sub && <p style={{ fontSize:"11px", color:c("#94a3b8","#475569"), margin:0 }}>{sub}</p>}
     </div>
   );
 
@@ -91,7 +142,7 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
             <div>
               <p style={{ fontSize:"10px", fontWeight:700, letterSpacing:"1px", textTransform:"uppercase", color:"#6366f1", margin:"0 0 3px" }}>Productivity Report</p>
               <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:"1.2rem", fontWeight:800, color:c("#0f172a","#f1f5f9"), margin:0 }}>
-                {user?.name}'s Report
+                {user?.name?.split(" ")[0] || "Your"}'s Report
               </h2>
               <p style={{ fontSize:"11.5px", color:c("#94a3b8","#475569"), margin:"3px 0 0" }}>
                 Generated {fmtDate(new Date())}
@@ -126,23 +177,23 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
         <div style={{ flex:1, overflowY:"auto", padding:"0 24px 24px" }}>
 
           {/* OVERVIEW */}
-          {tab==="overview"&&(
+          {tab==="overview" && (
             <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"10px" }}>
-                {sCard("Total Tasks",total,"bi-collection","#6366f1",c("rgba(99,102,241,0.07)","rgba(99,102,241,0.12)"))}
-                {sCard("Completed",done,"bi-check-circle-fill","#10b981",c("rgba(16,185,129,0.07)","rgba(16,185,129,0.12)"),`${pct}% completion rate`)}
-                {sCard("Pending",pending,"bi-hourglass-split","#f59e0b",c("rgba(245,158,11,0.07)","rgba(245,158,11,0.12)"),oldestPending?`Oldest: ${fmtDate(oldestPending.createdAt)}`:undefined)}
-                {sCard("Avg. Completion",avgCompH!=null?`${avgCompH}h`:"—","bi-stopwatch","#0ea5e9",c("rgba(14,165,233,0.07)","rgba(14,165,233,0.12)"),avgCompH!=null?"from creation to done":undefined)}
+                {sCard("Total Tasks", total, "bi-collection", "#6366f1", c("rgba(99,102,241,0.07)","rgba(99,102,241,0.12)"))}
+                {sCard("Completed", done, "bi-check-circle-fill", "#10b981", c("rgba(16,185,129,0.07)","rgba(16,185,129,0.12)"), `${completionRate}% of total`)}
+                {sCard("Pending", pending, "bi-hourglass-split", "#f59e0b", c("rgba(245,158,11,0.07)","rgba(245,158,11,0.12)"), oldestPending ? `Oldest: ${fmtDate(oldestPending.createdAt)}` : undefined)}
+                {sCard("Avg. Completion", avgCompH != null ? `${avgCompH}h` : "—", "bi-stopwatch", "#0ea5e9", c("rgba(14,165,233,0.07)","rgba(14,165,233,0.12)"), avgCompH != null ? "from creation to done" : undefined)}
               </div>
 
               {/* Progress bar */}
               <div style={{ padding:"16px", borderRadius:"14px", background:c("#f8fafc","#0d0d18"), border:`1px solid ${c("rgba(0,0,0,0.06)","rgba(255,255,255,0.05)")}` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
                   <span style={{ fontSize:"12px", fontWeight:700, color:c("#0f172a","#f1f5f9") }}>Overall Progress</span>
-                  <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1" }}>{pct}%</span>
+                  <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1" }}>{completionRate}%</span>
                 </div>
                 <div style={{ height:"8px", borderRadius:"10px", background:c("rgba(0,0,0,0.06)","rgba(255,255,255,0.06)") }}>
-                  <div style={{ height:"100%", width:`${pct}%`, borderRadius:"10px", background:"linear-gradient(90deg,#6366f1,#0ea5e9)", transition:"width 0.6s ease" }}/>
+                  <div style={{ height:"100%", width:`${completionRate}%`, borderRadius:"10px", background:"linear-gradient(90deg,#6366f1,#0ea5e9)", transition:"width 0.6s ease" }}/>
                 </div>
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:"8px" }}>
                   <span style={{ fontSize:"11px", color:"#10b981", fontWeight:600 }}>{done} completed</span>
@@ -151,7 +202,7 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
               </div>
 
               {/* Due date stats */}
-              {withDue.length>0&&(
+              {withDue.length > 0 && (
                 <div style={{ padding:"16px", borderRadius:"14px", background:c("#f8fafc","#0d0d18"), border:`1px solid ${c("rgba(0,0,0,0.06)","rgba(255,255,255,0.05)")}` }}>
                   <p style={{ fontSize:"12px", fontWeight:700, color:c("#0f172a","#f1f5f9"), margin:"0 0 12px" }}>Deadline Performance</p>
                   <div style={{ display:"flex", gap:"8px" }}>
@@ -166,15 +217,36 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
                       </div>
                     ))}
                   </div>
+                  <div style={{ marginTop:"12px", padding:"8px", borderRadius:"8px", background:c("rgba(99,102,241,0.05)","rgba(99,102,241,0.08)") }}>
+                    <p style={{ fontSize:"11px", color:c("#64748b","#94a3b8"), margin:0, textAlign:"center" }}>
+                      On-time rate: {withDue.length > 0 ? Math.round((onTime.length / withDue.length) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Insight message */}
+              {total > 0 && (
+                <div style={{ padding:"12px 16px", borderRadius:"12px", background:score >= 70 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)", border:`1px solid ${score >= 70 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"}` }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                    <i className={`bi ${score >= 70 ? "bi-emoji-smile" : "bi-emoji-neutral"}`} style={{ color:score >= 70 ? "#10b981" : "#f59e0b", fontSize:"16px" }}/>
+                    <p style={{ fontSize:"12px", color:c("#0f172a","#f1f5f9"), margin:0 }}>
+                      {score >= 85 && "Outstanding! You're crushing your goals! 🎉"}
+                      {score >= 70 && score < 85 && "Great work! Keep up the momentum! 💪"}
+                      {score >= 50 && score < 70 && "Good progress! A little more focus on deadlines will help 📈"}
+                      {score >= 30 && score < 50 && "Room for improvement. Try to prioritize tasks better 📋"}
+                      {score < 30 && "Time to reset! Focus on completing pending tasks ASAP ⚠️"}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           )}
 
           {/* TIMELINE */}
-          {tab==="timeline"&&(
+          {tab==="timeline" && (
             <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-              {tasks.length===0&&<p style={{ textAlign:"center", color:c("#94a3b8","#475569"), fontSize:"13px", padding:"2rem 0" }}>No tasks yet.</p>}
+              {tasks.length===0 && <p style={{ textAlign:"center", color:c("#94a3b8","#475569"), fontSize:"13px", padding:"2rem 0" }}>No tasks yet.</p>}
               {[...tasks].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(task=>{
                 const ds = getDueStatus(task);
                 const done = task.status==="completed";
@@ -183,24 +255,24 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
                   <div key={task._id} style={{ display:"flex", gap:"12px", padding:"12px 14px", borderRadius:"13px", background:c("#f8fafc","#0d0d18"), border:`1px solid ${c("rgba(0,0,0,0.05)","rgba(255,255,255,0.04)")}` }}>
                     {/* dot */}
                     <div style={{ paddingTop:"3px", flexShrink:0 }}>
-                      <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:done?"#10b981":ds==="overdue"?"#ef4444":"#f59e0b" }}/>
+                      <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:done ? "#10b981" : ds==="overdue" ? "#ef4444" : ds==="due-soon" ? "#f59e0b" : "#6366f1" }}/>
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"8px" }}>
                         <p style={{ fontSize:"13px", fontWeight:700, color:c("#0f172a","#f1f5f9"), margin:0, textDecoration:done?"line-through":"none", opacity:done?0.6:1 }}>{task.title}</p>
-                        {ds&&ds!=="ok"&&(
+                        {ds && ds!=="ok" && (
                           <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 7px", borderRadius:"100px", flexShrink:0,
                             background:{overdue:"rgba(239,68,68,0.1)","on-time":"rgba(16,185,129,0.1)",late:"rgba(248,113,113,0.1)","due-soon":"rgba(245,158,11,0.1)"}[ds],
                             color:{overdue:"#ef4444","on-time":"#10b981",late:"#f87171","due-soon":"#f59e0b"}[ds] }}>
-                            {ds==="on-time"?"On time":ds==="overdue"?"Overdue":ds==="late"?"Late":ds==="due-soon"?"Due soon":""}
+                            {ds==="on-time" ? "On time" : ds==="overdue" ? "Overdue" : ds==="late" ? "Late" : ds==="due-soon" ? "Due soon" : ""}
                           </span>
                         )}
                       </div>
                       <p style={{ fontSize:"11px", color:c("#94a3b8","#475569"), margin:"3px 0 0" }}>
                         Created {fmtDateTime(task.createdAt)}
-                        {task.dueDate&&<span style={{ marginLeft:"8px", color:ds==="overdue"?"#ef4444":ds==="late"?"#f87171":c("#94a3b8","#475569") }}>· Due {fmtDateTime(task.dueDate)}</span>}
-                        {done&&task.completedAt&&<span style={{ marginLeft:"8px", color:"#10b981" }}>· Done {fmtDateTime(task.completedAt)}</span>}
-                        {late&&<span style={{ marginLeft:"8px", color:"#f87171", fontWeight:700 }}>· {fmtDur(late)}</span>}
+                        {task.dueDate && <span style={{ marginLeft:"8px", color:ds==="overdue"?"#ef4444":ds==="late"?"#f87171":c("#94a3b8","#475569") }}>· Due {fmtDateTime(task.dueDate)}</span>}
+                        {done && task.completedAt && <span style={{ marginLeft:"8px", color:"#10b981" }}>· Done {fmtDateTime(task.completedAt)}</span>}
+                        {late && <span style={{ marginLeft:"8px", color:"#f87171", fontWeight:700 }}>· {fmtDur(late)}</span>}
                       </p>
                     </div>
                   </div>
@@ -210,9 +282,9 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
           )}
 
           {/* ISSUES */}
-          {tab==="issues"&&(
+          {tab==="issues" && (
             <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-              {overdue.length===0&&lateComp.length===0&&pending===0&&(
+              {overdue.length===0 && lateComp.length===0 && pending===0 && (
                 <div style={{ textAlign:"center", padding:"2.5rem 1rem" }}>
                   <div style={{ width:"52px", height:"52px", borderRadius:"14px", background:c("rgba(16,185,129,0.07)","rgba(16,185,129,0.12)"), display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
                     <i className="bi bi-check2-all" style={{ fontSize:"22px", color:"#10b981" }}/>
@@ -222,13 +294,13 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
                 </div>
               )}
 
-              {overdue.length>0&&(
+              {overdue.length > 0 && (
                 <div>
                   <p style={{ fontSize:"11px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", color:"#ef4444", margin:"0 0 8px", display:"flex", alignItems:"center", gap:"5px" }}>
                     <i className="bi bi-exclamation-triangle-fill"/>Overdue Tasks ({overdue.length})
                   </p>
                   {overdue.map(t=>{
-                    const overH = Math.round((new Date()-new Date(t.dueDate))/3600000);
+                    const overH = Math.round((new Date() - new Date(t.dueDate))/3600000);
                     return (
                       <div key={t._id} style={{ padding:"12px 14px", borderRadius:"12px", background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.18)", marginBottom:"6px" }}>
                         <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"4px" }}>
@@ -244,7 +316,7 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
                 </div>
               )}
 
-              {lateComp.length>0&&(
+              {lateComp.length > 0 && (
                 <div>
                   <p style={{ fontSize:"11px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", color:"#f87171", margin:"0 0 8px", display:"flex", alignItems:"center", gap:"5px" }}>
                     <i className="bi bi-clock-history"/>Completed Late ({lateComp.length})
@@ -255,7 +327,7 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
                       <div key={t._id} style={{ padding:"12px 14px", borderRadius:"12px", background:"rgba(248,113,113,0.06)", border:"1px solid rgba(248,113,113,0.15)", marginBottom:"6px" }}>
                         <p style={{ fontSize:"13px", fontWeight:700, color:c("#0f172a","#f1f5f9"), margin:"0 0 3px", textDecoration:"line-through", opacity:0.7 }}>{t.title}</p>
                         <p style={{ fontSize:"11px", color:"#f87171", margin:0, fontWeight:600 }}>
-                          {late?fmtDur(late):"Completed after deadline"} · Done {fmtDateTime(t.completedAt)}
+                          {late ? fmtDur(late) : "Completed after deadline"} · Done {fmtDateTime(t.completedAt)}
                         </p>
                       </div>
                     );
@@ -263,23 +335,28 @@ export default function ReportModal({ open, onClose, tasks, isDark, user }) {
                 </div>
               )}
 
-              {pending>0&&(
+              {pending > 0 && (
                 <div>
                   <p style={{ fontSize:"11px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", color:"#f59e0b", margin:"0 0 8px", display:"flex", alignItems:"center", gap:"5px" }}>
                     <i className="bi bi-hourglass-split"/>Still Pending ({pending})
                   </p>
-                  {tasks.filter(t=>t.status==="pending").sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).map(t=>{
-                    const ageH=Math.round((new Date()-new Date(t.createdAt))/3600000);
+                  {tasks.filter(t=>t.status==="pending").sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).slice(0, 5).map(t=>{
+                    const ageH = Math.round((new Date() - new Date(t.createdAt))/3600000);
                     return (
                       <div key={t._id} style={{ padding:"12px 14px", borderRadius:"12px", background:c("rgba(245,158,11,0.05)","rgba(245,158,11,0.07)"), border:"1px solid rgba(245,158,11,0.15)", marginBottom:"6px" }}>
                         <p style={{ fontSize:"13px", fontWeight:700, color:c("#0f172a","#f1f5f9"), margin:"0 0 3px" }}>{t.title}</p>
                         <p style={{ fontSize:"11px", color:"#f59e0b", margin:0, fontWeight:600 }}>
                           Created {fmtDateTime(t.createdAt)} · {ageH}h old
-                          {t.dueDate&&<span style={{ color: getDueStatus(t)==="overdue"?"#ef4444":"inherit" }}> · Due {fmtDateTime(t.dueDate)}</span>}
+                          {t.dueDate && <span style={{ color: getDueStatus(t)==="overdue"?"#ef4444":"inherit" }}> · Due {fmtDateTime(t.dueDate)}</span>}
                         </p>
                       </div>
                     );
                   })}
+                  {tasks.filter(t=>t.status==="pending").length > 5 && (
+                    <p style={{ fontSize:"11px", color:c("#94a3b8","#475569"), textAlign:"center", marginTop:"5px" }}>
+                      +{tasks.filter(t=>t.status==="pending").length - 5} more pending tasks
+                    </p>
+                  )}
                 </div>
               )}
             </div>

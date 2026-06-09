@@ -18,13 +18,17 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
     },
+    
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
       select: false, // Never return password in queries by default
     },
+
+    
   },
+  
   {
     timestamps: true, // Adds createdAt and updatedAt automatically
   }
