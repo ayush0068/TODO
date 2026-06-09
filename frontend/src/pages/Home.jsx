@@ -17,13 +17,12 @@ export default function Home() {
   const [lErr, setLErr] = useState({});
   const [lShowPw, setLShowPw] = useState(false);
   const [lLoading, setLLoading] = useState(false);
-  const [lFocus, setLFocus] = useState("");
+  const [focusedInput, setFocusedInput] = useState(null);
 
   const [rForm, setRForm] = useState({ name: "", email: "", password: "" });
   const [rErr, setRErr] = useState({});
   const [rShowPw, setRShowPw] = useState(false);
   const [rLoading, setRLoading] = useState(false);
-  const [rFocus, setRFocus] = useState("");
 
   const switchTo = (next) => {
     if (animating || mode === next) return;
@@ -93,130 +92,162 @@ export default function Home() {
   };
   const strMeta = [
     { label: "", color: "#334155" },
-    { label: "Weak",   color: "#ef4444" },
-    { label: "Fair",   color: "#f59e0b" },
-    { label: "Good",   color: "#84cc16" },
+    { label: "Weak", color: "#ef4444" },
+    { label: "Fair", color: "#f59e0b" },
+    { label: "Good", color: "#84cc16" },
     { label: "Strong", color: "#10b981" },
   ];
 
-  const d = theme === "dark";
+  const isDark = theme === "dark";
+  const d = isDark;
 
-  // ── Input style — driven by React state, not DOM mutation ──
-  const inp = (focused, hasError, extra = {}) => ({
-    width: "100%",
-    boxSizing: "border-box",
+  const inp = (extra = {}, isFocused = false) => ({
+    width: "100%", boxSizing: "border-box",
     padding: "0.72rem 0.9rem 0.72rem 2.5rem",
-    borderRadius: "11px",
-    border: `1.5px solid ${
-      hasError  ? "#ef4444" :
-      focused   ? "#6366f1" :
-      d         ? "rgba(255,255,255,0.09)" : "rgba(15,23,42,0.12)"
-    }`,
-    background: focused
-      ? (d ? "rgba(99,102,241,0.05)" : "rgba(99,102,241,0.02)")
-      : (d ? "rgba(255,255,255,0.03)" : "rgba(15,23,42,0.025)"),
-    boxShadow: focused ? "0 0 0 3.5px rgba(99,102,241,0.13)" : "none",
+    borderRadius: "11px", border: "1.5px solid",
+    borderColor: isFocused ? "#6366f1" : (d ? "rgba(255,255,255,0.09)" : "rgba(15,23,42,0.12)"),
+    background: isFocused ? (d ? "rgba(99,102,241,0.04)" : "rgba(99,102,241,0.02)") : (d ? "rgba(255,255,255,0.03)" : "rgba(15,23,42,0.025)"),
     color: d ? "#e2e8f0" : "#0f172a",
-    fontSize: "13.5px",
-    fontFamily: "'DM Sans',sans-serif",
-    outline: "none",
-    transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
+    fontSize: "13.5px", fontFamily: "'DM Sans',sans-serif",
+    outline: "none", transition: "border-color 0.2s, box-shadow 0.2s",
+    boxShadow: isFocused ? "0 0 0 3.5px rgba(99,102,241,0.13)" : "none",
     ...extra,
   });
 
   const iconSt = {
     position: "absolute", left: "0.8rem", top: "50%",
     transform: "translateY(-50%)", pointerEvents: "none",
-    color: d ? "rgba(255,255,255,0.28)" : "rgba(15,23,42,0.28)",
-    fontSize: "14px",
+    color: d ? "rgba(255,255,255,0.28)" : "rgba(15,23,42,0.28)", fontSize: "14px",
   };
 
   const errLine = (msg) => msg ? (
-    <p style={{ display:"flex", alignItems:"center", gap:"4px", fontSize:"11.5px", color:"#ef4444", marginTop:"5px", margin:"5px 0 0" }}>
-      <i className="bi bi-exclamation-circle" style={{ fontSize:"11px" }} />{msg}
+    <p style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "#ef4444", marginTop: "5px" }}>
+      <i className="bi bi-exclamation-circle" style={{ fontSize: "11px" }} />{msg}
     </p>
   ) : null;
 
   const labelSt = {
-    display:"block", fontSize:"11px", fontWeight:700,
-    letterSpacing:"0.7px", textTransform:"uppercase",
-    color: d ? "#475569" : "#94a3b8", marginBottom:"6px",
+    display: "block", fontSize: "11px", fontWeight: 700,
+    letterSpacing: "0.7px", textTransform: "uppercase",
+    color: d ? "#475569" : "#94a3b8", marginBottom: "6px",
   };
 
   const features = [
-    { icon:"bi-shield-lock-fill", color:"#818cf8", text:"JWT auth — your data stays private"      },
-    { icon:"bi-search",           color:"#38bdf8", text:"Instant search across all tasks"         },
-    { icon:"bi-bar-chart-fill",   color:"#34d399", text:"Visual progress tracking built in"       },
-    { icon:"bi-bell-fill",        color:"#fb923c", text:"Due-date alerts & overdue tracking"       },
+    { icon: "bi-shield-lock-fill", color: "#818cf8", text: "JWT auth — your data stays private" },
+    { icon: "bi-search",           color: "#38bdf8", text: "Instant search across all tasks"    },
+    { icon: "bi-bar-chart-fill",   color: "#34d399", text: "Visual progress tracking built in"  },
+    { icon: "bi-bell-fill",        color: "#fb923c", text: "Due-date alerts & overdue tracking"  },
   ];
 
   return (
-    <div style={{ minHeight:"100dvh", display:"flex", flexDirection:"column", fontFamily:"'DM Sans',sans-serif", background: d?"#07070f":"#f0f0f8", overflow:"hidden" }}>
+    <div style={{
+      minHeight: "100dvh", display: "flex", flexDirection: "column",
+      fontFamily: "'DM Sans',sans-serif",
+      background: d ? "#07070f" : "#f0f0f8",
+      overflow: "hidden",
+    }}>
 
       {/* ══ NAVBAR ══ */}
-      <nav style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 2rem", height:"56px", flexShrink:0, borderBottom:`1px solid ${d?"rgba(255,255,255,0.05)":"rgba(15,23,42,0.07)"}`, background: d?"rgba(7,7,15,0.9)":"rgba(240,240,248,0.9)", backdropFilter:"blur(14px)", position:"sticky", top:0, zIndex:40 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"9px" }}>
-          <div style={{ width:"32px", height:"32px", borderRadius:"10px", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", boxShadow:"0 0 18px rgba(99,102,241,0.45)" }}>
-            <i className="bi bi-check2-square" style={{ color:"white", fontSize:"15px" }} />
+      <nav style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 2rem", height: "56px", flexShrink: 0,
+        borderBottom: `1px solid ${d ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.07)"}`,
+        background: d ? "rgba(7,7,15,0.9)" : "rgba(240,240,248,0.9)",
+        backdropFilter: "blur(14px)", position: "sticky", top: 0, zIndex: 40,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+          <div style={{ width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", boxShadow: "0 0 18px rgba(99,102,241,0.45)" }}>
+            <i className="bi bi-check2-square" style={{ color: "white", fontSize: "15px" }} />
           </div>
-          <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:"18px", letterSpacing:"-0.3px", color: d?"#f1f5f9":"#0f172a" }}>TaskFlow</span>
+          <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "18px", letterSpacing: "-0.3px", color: d ? "#f1f5f9" : "#0f172a" }}>TaskFlow</span>
         </div>
-        <button onClick={toggleTheme} style={{ width:"34px", height:"34px", borderRadius:"10px", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background: d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.07)", color: d?"#94a3b8":"#475569", transition:"all 0.2s" }}
-          onMouseEnter={e=>e.currentTarget.style.background=d?"rgba(255,255,255,0.12)":"rgba(15,23,42,0.12)"}
-          onMouseLeave={e=>e.currentTarget.style.background=d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.07)"}>
-          <i className={`bi bi-${d?"sun":"moon"}`} style={{ fontSize:"14px", color: d?"#f59e0b":"#6366f1" }} />
+        <button onClick={toggleTheme} style={{ width: "34px", height: "34px", borderRadius: "10px", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: d ? "rgba(255,255,255,0.07)" : "rgba(15,23,42,0.07)", color: d ? "#94a3b8" : "#475569", transition: "all 0.2s" }}
+          onMouseEnter={e => e.currentTarget.style.background = d ? "rgba(255,255,255,0.12)" : "rgba(15,23,42,0.12)"}
+          onMouseLeave={e => e.currentTarget.style.background = d ? "rgba(255,255,255,0.07)" : "rgba(15,23,42,0.07)"}>
+          <i className={`bi bi-${d ? "sun" : "moon"}`} style={{ fontSize: "14px", color: d ? "#f59e0b" : "#6366f1" }} />
         </button>
       </nav>
 
       {/* ══ BODY ══ */}
-      <div style={{ flex:1, display:"flex", alignItems:"stretch" }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "stretch", overflow: "hidden" }}>
 
-        {/* ── LEFT PANEL ── */}
-        <div style={{ flex:"0 0 50%", display:"flex", flexDirection:"column", justifyContent:"center", padding:"3rem 4rem", position:"relative", overflow:"hidden", background: d?"linear-gradient(150deg,#090914 0%,#0c0c1e 60%,#07070f 100%)":"linear-gradient(150deg,#eef2ff 0%,#f0f9ff 55%,#f5f3ff 100%)", borderRight:`1px solid ${d?"rgba(99,102,241,0.1)":"rgba(99,102,241,0.08)"}` }}>
-          <div style={{ position:"absolute",top:"-120px",left:"-80px",width:"500px",height:"500px",borderRadius:"50%",pointerEvents:"none",background: d?"radial-gradient(circle,rgba(99,102,241,0.13) 0%,transparent 65%)":"radial-gradient(circle,rgba(99,102,241,0.08) 0%,transparent 65%)" }} />
-          <div style={{ position:"absolute",bottom:"-80px",right:"-40px",width:"380px",height:"380px",borderRadius:"50%",pointerEvents:"none",background: d?"radial-gradient(circle,rgba(14,165,233,0.09) 0%,transparent 65%)":"radial-gradient(circle,rgba(14,165,233,0.06) 0%,transparent 65%)" }} />
-          <div style={{ position:"relative",zIndex:2 }}>
-            <div style={{ display:"inline-flex",alignItems:"center",gap:"8px",padding:"5px 13px",borderRadius:"100px",width:"fit-content",marginBottom:"28px",border:`1px solid ${d?"rgba(99,102,241,0.28)":"rgba(99,102,241,0.22)"}`,background: d?"rgba(99,102,241,0.09)":"rgba(99,102,241,0.07)" }}>
+        {/* ── LEFT HERO PANEL ── */}
+        <div style={{
+          flex: "0 0 50%", display: "flex", flexDirection: "column",
+          justifyContent: "center", padding: "3rem 4rem",
+          position: "relative", overflow: "hidden",
+          background: d
+            ? "linear-gradient(150deg,#090914 0%,#0c0c1e 60%,#07070f 100%)"
+            : "linear-gradient(150deg,#eef2ff 0%,#f0f9ff 55%,#f5f3ff 100%)",
+          borderRight: `1px solid ${d ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.08)"}`,
+        }}>
+          {/* Orbs */}
+          <div style={{ position:"absolute",top:"-120px",left:"-80px",width:"500px",height:"500px",borderRadius:"50%",pointerEvents:"none", background: d?"radial-gradient(circle,rgba(99,102,241,0.13) 0%,transparent 65%)":"radial-gradient(circle,rgba(99,102,241,0.08) 0%,transparent 65%)" }} />
+          <div style={{ position:"absolute",bottom:"-80px",right:"-40px",width:"380px",height:"380px",borderRadius:"50%",pointerEvents:"none", background: d?"radial-gradient(circle,rgba(14,165,233,0.09) 0%,transparent 65%)":"radial-gradient(circle,rgba(14,165,233,0.06) 0%,transparent 65%)" }} />
+
+          <div style={{ position: "relative", zIndex: 2 }}>
+            {/* Badge */}
+            <div style={{ display:"inline-flex",alignItems:"center",gap:"8px",padding:"5px 13px",borderRadius:"100px",width:"fit-content",marginBottom:"28px", border:`1px solid ${d?"rgba(99,102,241,0.28)":"rgba(99,102,241,0.22)"}`, background: d?"rgba(99,102,241,0.09)":"rgba(99,102,241,0.07)" }}>
               <span style={{ width:"6px",height:"6px",borderRadius:"50%",background:"#6366f1",boxShadow:"0 0 7px #6366f1",display:"inline-block",animation:"pls 2s ease-in-out infinite" }} />
               <span style={{ fontSize:"11.5px",fontWeight:600,color:"#818cf8",letterSpacing:"0.2px" }}>MongoDB Atlas sync enabled</span>
             </div>
+
+            {/* Heading */}
             <h1 style={{ fontFamily:"'Playfair Display',serif",fontSize:"clamp(2.2rem,3vw,3rem)",fontWeight:800,lineHeight:1.1,marginBottom:"16px",color: d?"#f1f5f9":"#0f172a" }}>
               Your tasks,<br />
-              <span style={{ background:"linear-gradient(125deg,#6366f1 0%,#0ea5e9 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text" }}>finally in order.</span>
+              <span style={{ background:"linear-gradient(125deg,#6366f1 0%,#0ea5e9 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text" }}>
+                finally in order.
+              </span>
             </h1>
+
             <p style={{ fontSize:"14.5px",lineHeight:1.78,marginBottom:"36px",color: d?"#94a3b8":"#64748b",maxWidth:"380px" }}>
-              A clean, fast task manager for developers and teams. Create, search, and track — all synced securely to the cloud.
+              A clean, fast task manager for developers and teams.
+              Create, search, and track — all synced securely to the cloud.
             </p>
+
+            {/* Features */}
             <div style={{ display:"flex",flexDirection:"column",gap:"14px",marginBottom:"40px" }}>
-              {features.map(f=>(
+              {features.map(f => (
                 <div key={f.text} style={{ display:"flex",alignItems:"center",gap:"13px" }}>
-                  <div style={{ width:"34px",height:"34px",borderRadius:"10px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background: d?"rgba(255,255,255,0.04)":"rgba(15,23,42,0.04)",border:`1px solid ${d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.07)"}` }}>
+                  <div style={{ width:"34px",height:"34px",borderRadius:"10px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center", background: d?"rgba(255,255,255,0.04)":"rgba(15,23,42,0.04)", border:`1px solid ${d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.07)"}` }}>
                     <i className={`bi ${f.icon}`} style={{ color:f.color,fontSize:"14px" }} />
                   </div>
                   <span style={{ fontSize:"13.5px",color: d?"#94a3b8":"#64748b",fontWeight:500 }}>{f.text}</span>
                 </div>
               ))}
             </div>
-            <div style={{ display:"flex",alignItems:"center",flexWrap:"wrap" }}>
-              {["React","Node.js","MongoDB","JWT"].map((t,i,arr)=>(
-                <span key={t} style={{ fontSize:"10.5px",fontWeight:700,letterSpacing:"0.4px",color: d?"#334155":"#94a3b8",paddingRight: i<arr.length-1?"16px":"0",marginRight: i<arr.length-1?"16px":"0",borderRight: i<arr.length-1?`1px solid ${d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.08)"}`:undefined }}>{t}</span>
+
+            {/* Tech stack */}
+            <div style={{ display:"flex",alignItems:"center",gap:"0",flexWrap:"wrap" }}>
+              {["React","Node.js","MongoDB","JWT"].map((t,i,arr) => (
+                <span key={t} style={{ fontSize:"10.5px",fontWeight:700,letterSpacing:"0.4px",color: d?"#334155":"#94a3b8", paddingRight: i<arr.length-1?"16px":"0", marginRight: i<arr.length-1?"16px":"0", borderRight: i<arr.length-1?`1px solid ${d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.08)"}`:undefined }}>
+                  {t}
+                </span>
               ))}
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT PANEL ── */}
-        <div style={{ flex:"0 0 50%",display:"flex",alignItems:"center",justifyContent:"center",padding:"2.5rem 3rem",position:"relative",overflow:"hidden",background: d?"#0d0d1e":"#ffffff" }}>
-          <div style={{ position:"absolute",top:"-80px",right:"-80px",width:"300px",height:"300px",borderRadius:"50%",pointerEvents:"none",background: d?"radial-gradient(circle,rgba(99,102,241,0.07) 0%,transparent 65%)":"radial-gradient(circle,rgba(99,102,241,0.04) 0%,transparent 65%)" }} />
+        {/* ── RIGHT FORM PANEL ── */}
+        <div style={{
+          flex: "0 0 50%", display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "2.5rem 3rem", position: "relative", overflow: "hidden",
+          background: d ? "#0d0d1e" : "#ffffff",
+        }}>
+          {/* Corner glows */}
+          <div style={{ position:"absolute",top:"-80px",right:"-80px",width:"300px",height:"300px",borderRadius:"50%",pointerEvents:"none", background: d?"radial-gradient(circle,rgba(99,102,241,0.07) 0%,transparent 65%)":"radial-gradient(circle,rgba(99,102,241,0.04) 0%,transparent 65%)" }} />
+          <div style={{ position:"absolute",bottom:"-60px",left:"-40px",width:"240px",height:"240px",borderRadius:"50%",pointerEvents:"none", background: d?"radial-gradient(circle,rgba(14,165,233,0.06) 0%,transparent 65%)":"radial-gradient(circle,rgba(14,165,233,0.04) 0%,transparent 65%)" }} />
+
+          {/* Top gradient line */}
           <div style={{ position:"absolute",top:0,left:0,right:0,height:"2px",background:"linear-gradient(90deg,transparent,#6366f1 30%,#0ea5e9 70%,transparent)" }} />
 
-          <div style={{ width:"100%",maxWidth:"400px",position:"relative",zIndex:2,transition:"opacity 0.36s,transform 0.36s",opacity: animating?0:1,transform: animating?"translateY(10px)":"translateY(0)" }}>
+          <div style={{ width:"100%",maxWidth:"400px",position:"relative",zIndex:2, transition:"opacity 0.36s,transform 0.36s", opacity: animating?0:1, transform: animating?"translateY(10px)":"translateY(0)" }}>
 
-            {/* ══ LOGIN ══ */}
-            {mode==="login"&&(
+            {mode === "login" ? (
               <div>
+                {/* Header */}
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"22px" }}>
-                  <div style={{ width:"42px",height:"42px",borderRadius:"13px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,rgba(99,102,241,0.15),rgba(14,165,233,0.1))",border:`1px solid ${d?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}` }}>
+                  <div style={{ width:"42px",height:"42px",borderRadius:"13px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center", background:"linear-gradient(135deg,rgba(99,102,241,0.15),rgba(14,165,233,0.1))", border:`1px solid ${d?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}` }}>
                     <i className="bi bi-person-circle" style={{ color:"#818cf8",fontSize:"20px" }} />
                   </div>
                   <div>
@@ -227,46 +258,43 @@ export default function Home() {
                 <div style={{ height:"1px",background:`linear-gradient(90deg,${d?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.2)"} 0%,transparent 100%)`,marginBottom:"22px" }} />
 
                 <form onSubmit={handleLogin} noValidate style={{ display:"flex",flexDirection:"column",gap:"15px" }}>
-                  {/* Email */}
                   <div>
                     <label style={labelSt}>Email address</label>
                     <div style={{ position:"relative" }}>
                       <i className="bi bi-envelope" style={iconSt} />
-                      <input
-                        type="email"
-                        style={inp(lFocus==="email", !!lErr.email)}
-                        placeholder="you@example.com"
-                        value={lForm.email}
-                        onChange={setL("email")}
-                        onFocus={()=>setLFocus("email")}
-                        onBlur={()=>setLFocus("")}
-                        autoComplete="email"
+                      <input 
+                        type="email" 
+                        style={inp({}, focusedInput === "lEmail")} 
+                        placeholder="you@example.com" 
+                        value={lForm.email} 
+                        onChange={setL("email")} 
+                        onFocus={() => setFocusedInput("lEmail")}
+                        onBlur={() => setFocusedInput(null)}
+                        autoComplete="email" 
                       />
                     </div>
                     {errLine(lErr.email)}
                   </div>
-                  {/* Password */}
                   <div>
                     <label style={labelSt}>Password</label>
                     <div style={{ position:"relative" }}>
                       <i className="bi bi-lock" style={iconSt} />
-                      <input
-                        type={lShowPw?"text":"password"}
-                        style={inp(lFocus==="password", !!lErr.password, { paddingRight:"2.4rem" })}
-                        placeholder="••••••••"
-                        value={lForm.password}
-                        onChange={setL("password")}
-                        onFocus={()=>setLFocus("password")}
-                        onBlur={()=>setLFocus("")}
-                        autoComplete="current-password"
+                      <input 
+                        type={lShowPw?"text":"password"} 
+                        style={inp({ paddingRight:"2.4rem" }, focusedInput === "lPassword")} 
+                        placeholder="••••••••" 
+                        value={lForm.password} 
+                        onChange={setL("password")} 
+                        onFocus={() => setFocusedInput("lPassword")}
+                        onBlur={() => setFocusedInput(null)}
+                        autoComplete="current-password" 
                       />
-                      <button type="button" onClick={()=>setLShowPw(p=>!p)} style={{ position:"absolute",right:"11px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:0,color: d?"rgba(255,255,255,0.35)":"rgba(15,23,42,0.35)",fontSize:"14px" }}>
+                      <button type="button" onClick={()=>setLShowPw(p=>!p)} style={{ position:"absolute",right:"11px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:0,color: d?"rgba(255,255,255,0.28)":"rgba(15,23,42,0.28)",fontSize:"14px" }}>
                         <i className={`bi bi-eye${lShowPw?"-slash":""}`} />
                       </button>
                     </div>
                     {errLine(lErr.password)}
                   </div>
-
                   <button type="submit" disabled={lLoading} style={{ width:"100%",padding:"13px",borderRadius:"12px",border:"none",marginTop:"4px",background:"linear-gradient(135deg,#6366f1 0%,#0ea5e9 100%)",color:"white",fontSize:"13.5px",fontWeight:700,cursor:lLoading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",fontFamily:"'DM Sans',sans-serif",boxShadow:"0 6px 22px rgba(99,102,241,0.38)",transition:"transform 0.15s,box-shadow 0.15s" }}
                     onMouseEnter={e=>{if(!lLoading){e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 10px 28px rgba(99,102,241,0.48)";}}}
                     onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 6px 22px rgba(99,102,241,0.38)";}}>
@@ -293,13 +321,11 @@ export default function Home() {
                   <span style={{ fontSize:"11px",color: d?"#334155":"#94a3b8" }}>Secured with JWT &amp; MongoDB Atlas</span>
                 </div>
               </div>
-            )}
 
-            {/* ══ REGISTER ══ */}
-            {mode==="register"&&(
+            ) : (
               <div>
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"20px" }}>
-                  <div style={{ width:"42px",height:"42px",borderRadius:"13px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,rgba(14,165,233,0.15),rgba(99,102,241,0.1))",border:`1px solid ${d?"rgba(14,165,233,0.2)":"rgba(14,165,233,0.15)"}` }}>
+                  <div style={{ width:"42px",height:"42px",borderRadius:"13px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center", background:"linear-gradient(135deg,rgba(14,165,233,0.15),rgba(99,102,241,0.1))", border:`1px solid ${d?"rgba(14,165,233,0.2)":"rgba(14,165,233,0.15)"}` }}>
                     <i className="bi bi-rocket-takeoff" style={{ color:"#38bdf8",fontSize:"18px" }} />
                   </div>
                   <div>
@@ -310,74 +336,70 @@ export default function Home() {
                 <div style={{ height:"1px",background:`linear-gradient(90deg,${d?"rgba(14,165,233,0.3)":"rgba(14,165,233,0.2)"} 0%,transparent 100%)`,marginBottom:"20px" }} />
 
                 <form onSubmit={handleRegister} noValidate style={{ display:"flex",flexDirection:"column",gap:"13px" }}>
-                  {/* Name */}
                   <div>
                     <label style={labelSt}>Full Name</label>
                     <div style={{ position:"relative" }}>
                       <i className="bi bi-person" style={iconSt} />
-                      <input
-                        type="text"
-                        style={inp(rFocus==="name", !!rErr.name)}
-                        placeholder="John Doe"
-                        value={rForm.name}
-                        onChange={setR("name")}
-                        onFocus={()=>setRFocus("name")}
-                        onBlur={()=>setRFocus("")}
-                        autoComplete="name"
+                      <input 
+                        type="text" 
+                        style={inp({}, focusedInput === "rName")} 
+                        placeholder="John Doe" 
+                        value={rForm.name} 
+                        onChange={setR("name")} 
+                        onFocus={() => setFocusedInput("rName")}
+                        onBlur={() => setFocusedInput(null)}
+                        autoComplete="name" 
                       />
                     </div>
                     {errLine(rErr.name)}
                   </div>
-                  {/* Email */}
                   <div>
                     <label style={labelSt}>Email address</label>
                     <div style={{ position:"relative" }}>
                       <i className="bi bi-envelope" style={iconSt} />
-                      <input
-                        type="email"
-                        style={inp(rFocus==="email", !!rErr.email)}
-                        placeholder="you@example.com"
-                        value={rForm.email}
-                        onChange={setR("email")}
-                        onFocus={()=>setRFocus("email")}
-                        onBlur={()=>setRFocus("")}
-                        autoComplete="email"
+                      <input 
+                        type="email" 
+                        style={inp({}, focusedInput === "rEmail")} 
+                        placeholder="you@example.com" 
+                        value={rForm.email} 
+                        onChange={setR("email")} 
+                        onFocus={() => setFocusedInput("rEmail")}
+                        onBlur={() => setFocusedInput(null)}
+                        autoComplete="email" 
                       />
                     </div>
                     {errLine(rErr.email)}
                   </div>
-                  {/* Password */}
                   <div>
                     <label style={labelSt}>Password</label>
                     <div style={{ position:"relative" }}>
                       <i className="bi bi-lock" style={iconSt} />
-                      <input
-                        type={rShowPw?"text":"password"}
-                        style={inp(rFocus==="password", !!rErr.password, { paddingRight:"2.4rem" })}
-                        placeholder="Min. 6 characters"
-                        value={rForm.password}
-                        onChange={setR("password")}
-                        onFocus={()=>setRFocus("password")}
-                        onBlur={()=>setRFocus("")}
-                        autoComplete="new-password"
+                      <input 
+                        type={rShowPw?"text":"password"} 
+                        style={inp({ paddingRight:"2.4rem" }, focusedInput === "rPassword")} 
+                        placeholder="Min. 6 characters" 
+                        value={rForm.password} 
+                        onChange={setR("password")} 
+                        onFocus={() => setFocusedInput("rPassword")}
+                        onBlur={() => setFocusedInput(null)}
+                        autoComplete="new-password" 
                       />
-                      <button type="button" onClick={()=>setRShowPw(p=>!p)} style={{ position:"absolute",right:"11px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:0,color: d?"rgba(255,255,255,0.35)":"rgba(15,23,42,0.35)",fontSize:"14px" }}>
+                      <button type="button" onClick={()=>setRShowPw(p=>!p)} style={{ position:"absolute",right:"11px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:0,color: d?"rgba(255,255,255,0.28)":"rgba(15,23,42,0.28)",fontSize:"14px" }}>
                         <i className={`bi bi-eye${rShowPw?"-slash":""}`} />
                       </button>
                     </div>
                     {errLine(rErr.password)}
-                    {rForm.password&&(
+                    {rForm.password && (
                       <div style={{ marginTop:"7px" }}>
                         <div style={{ display:"flex",gap:"3px",marginBottom:"4px" }}>
-                          {[1,2,3,4].map(n=>(
-                            <div key={n} style={{ flex:1,height:"2.5px",borderRadius:"10px",transition:"background 0.3s",background: pwStr(rForm.password)>=n?strMeta[pwStr(rForm.password)].color:d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.08)" }} />
+                          {[1,2,3,4].map(n => (
+                            <div key={n} style={{ flex:1,height:"2.5px",borderRadius:"10px",transition:"background 0.3s", background: pwStr(rForm.password)>=n ? strMeta[pwStr(rForm.password)].color : d?"rgba(255,255,255,0.07)":"rgba(15,23,42,0.08)" }} />
                           ))}
                         </div>
                         <span style={{ fontSize:"10.5px",fontWeight:700,color:strMeta[pwStr(rForm.password)].color }}>{strMeta[pwStr(rForm.password)].label}</span>
                       </div>
                     )}
                   </div>
-
                   <button type="submit" disabled={rLoading} style={{ width:"100%",padding:"13px",borderRadius:"12px",border:"none",marginTop:"2px",background:"linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%)",color:"white",fontSize:"13.5px",fontWeight:700,cursor:rLoading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",fontFamily:"'DM Sans',sans-serif",boxShadow:"0 6px 22px rgba(14,165,233,0.32)",transition:"transform 0.15s,box-shadow 0.15s" }}
                     onMouseEnter={e=>{if(!rLoading){e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 10px 28px rgba(14,165,233,0.42)";}}}
                     onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 6px 22px rgba(14,165,233,0.32)";}}>
@@ -404,7 +426,6 @@ export default function Home() {
                 </p>
               </div>
             )}
-
           </div>
         </div>
       </div>
@@ -412,13 +433,35 @@ export default function Home() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pls  { 0%,100%{opacity:1;box-shadow:0 0 7px #6366f1} 50%{opacity:0.6;box-shadow:0 0 3px #6366f1} }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes pls { 0%,100%{opacity:1;box-shadow:0 0 7px #6366f1} 50%{opacity:0.6;box-shadow:0 0 3px #6366f1} }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         input::placeholder { opacity: 0.45; }
+
+        /* ══ MOBILE ══ */
         @media (max-width: 768px) {
-          div[style*="flex: 0 0 50%"]:first-of-type { display: none !important; }
-          div[style*="flex: 0 0 50%"]:last-of-type  { flex: 1 !important; padding: 2rem 1.4rem !important; }
+          .home-body { flex-direction: column !important; overflow-y: auto !important; }
+          .hero-panel {
+            flex: unset !important;
+            padding: 2rem 1.5rem 1.8rem !important;
+            border-right: none !important;
+            border-bottom: 1px solid rgba(99,102,241,0.1) !important;
+          }
+          .hero-panel h1 { font-size: 1.9rem !important; margin-bottom: 10px !important; }
+          .hero-panel p  { font-size: 13.5px !important; margin-bottom: 20px !important; }
+          .features-list { gap: 10px !important; margin-bottom: 20px !important; }
+          .form-panel {
+            flex: unset !important;
+            padding: 2rem 1.5rem 2.5rem !important;
+          }
         }
+      `}</style>
+
+      {/* Re-apply classNames via a wrapper trick — inject className via a wrapping div */}
+      <style>{`
+        .home-body { display: flex; flex: 1; align-items: stretch; overflow: hidden; }
+        .hero-panel { flex: 0 0 50%; display: flex; flex-direction: column; justify-content: center; padding: 3rem 4rem; position: relative; overflow: hidden; }
+        .form-panel { flex: 0 0 50%; display: flex; align-items: center; justify-content: center; padding: 2.5rem 3rem; position: relative; overflow: hidden; }
+        .features-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
       `}</style>
     </div>
   );
