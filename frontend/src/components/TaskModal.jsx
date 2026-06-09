@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function TaskModal({ open, onClose, onSave, task, isDark }) {
   const [title,       setTitle]       = useState("");
@@ -7,6 +7,9 @@ export default function TaskModal({ open, onClose, onSave, task, isDark }) {
   const [dueDate,     setDueDate]     = useState("");
   const [dueTime,     setDueTime]     = useState("");
   const [errors,      setErrors]      = useState({});
+
+  const dateInputRef = useRef(null);
+  const timeInputRef = useRef(null);
 
   const c = (l, d) => isDark ? d : l;
 
@@ -49,6 +52,18 @@ export default function TaskModal({ open, onClose, onSave, task, isDark }) {
     onClose();
   };
 
+  const handleDateIconClick = () => {
+    if (dateInputRef.current) {
+      dateInputRef.current.showPicker();
+    }
+  };
+
+  const handleTimeIconClick = () => {
+    if (timeInputRef.current) {
+      timeInputRef.current.showPicker();
+    }
+  };
+
   const inp = (extra={}) => ({
     width:"100%", boxSizing:"border-box", padding:"10px 14px", borderRadius:"11px",
     border:`1.5px solid ${c("rgba(0,0,0,0.08)","rgba(255,255,255,0.08)")}`,
@@ -87,16 +102,22 @@ export default function TaskModal({ open, onClose, onSave, task, isDark }) {
             {/* Title */}
             <div>
               <label style={lbl}>Title <span style={{ color:"#ef4444" }}>*</span></label>
-              <input style={inp({ borderColor: errors.title?"#ef4444":undefined })} placeholder="What needs to be done?" value={title} maxLength={100}
-                onChange={e=>{setTitle(e.target.value);setErrors({});}} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&handleSubmit()} onFocus={onF} onBlur={onB} autoFocus/>
+              <div style={{ position:"relative" }}>
+                <i className="bi bi-pencil-square" style={{ position:"absolute", left:"12px", top:"50%", transform:"translateY(-50%)", color:c("#94a3b8","#475569"), fontSize:"14px", pointerEvents:"none" }} />
+                <input style={inp({ paddingLeft:"38px", borderColor: errors.title?"#ef4444":undefined })} placeholder="What needs to be done?" value={title} maxLength={100}
+                  onChange={e=>{setTitle(e.target.value);setErrors({});}} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&handleSubmit()} onFocus={onF} onBlur={onB} autoFocus/>
+              </div>
               {errors.title&&<p style={{ fontSize:"11.5px", color:"#ef4444", margin:"5px 0 0" }}>{errors.title}</p>}
             </div>
 
             {/* Description */}
             <div>
               <label style={lbl}>Description <span style={{ fontSize:"10px", fontWeight:500, textTransform:"none" }}>(optional)</span></label>
-              <textarea style={{ ...inp(), resize:"none" }} rows={3} placeholder="Add more details..." value={description} maxLength={500}
-                onChange={e=>setDescription(e.target.value)} onFocus={onF} onBlur={onB}/>
+              <div style={{ position:"relative" }}>
+                <i className="bi bi-text-paragraph" style={{ position:"absolute", left:"12px", top:"14px", color:c("#94a3b8","#475569"), fontSize:"14px", pointerEvents:"none" }} />
+                <textarea style={{ ...inp({ paddingLeft:"38px" }), resize:"none" }} rows={3} placeholder="Add more details..." value={description} maxLength={500}
+                  onChange={e=>setDescription(e.target.value)} onFocus={onF} onBlur={onB}/>
+              </div>
               <p style={{ textAlign:"right", fontSize:"11px", color:c("#94a3b8","#475569"), margin:"3px 0 0" }}>{description.length}/500</p>
             </div>
 
@@ -107,9 +128,66 @@ export default function TaskModal({ open, onClose, onSave, task, isDark }) {
                 Target Completion
               </label>
               <div style={{ display:"flex", gap:"8px" }}>
-                <input type="date" style={{ ...inp(), flex:1 }} value={dueDate} onChange={e=>setDueDate(e.target.value)} onFocus={onF} onBlur={onB}
-                  min={new Date().toISOString().split("T")[0]}/>
-                <input type="time" style={{ ...inp(), width:"130px", flexShrink:0 }} value={dueTime} onChange={e=>setDueTime(e.target.value)} onFocus={onF} onBlur={onB}/>
+                {/* Date input with calendar icon - icon click triggers input */}
+                <div style={{ position:"relative", flex:1 }}>
+                  <i 
+                    className="bi bi-calendar3" 
+                    onClick={handleDateIconClick}
+                    style={{ 
+                      position:"absolute", 
+                      left:"12px", 
+                      top:"50%", 
+                      transform:"translateY(-50%)", 
+                      color:c("#94a3b8","#475569"), 
+                      fontSize:"14px", 
+                      cursor:"pointer",
+                      zIndex:1,
+                      transition:"color 0.2s"
+                    }}
+                    onMouseEnter={e=>e.currentTarget.style.color="#6366f1"}
+                    onMouseLeave={e=>e.currentTarget.style.color=c("#94a3b8","#475569")}
+                  />
+                  <input 
+                    ref={dateInputRef}
+                    type="date" 
+                    style={{ ...inp({ paddingLeft:"38px" }), flex:1, cursor:"pointer" }} 
+                    value={dueDate} 
+                    onChange={e=>setDueDate(e.target.value)} 
+                    onFocus={onF} 
+                    onBlur={onB}
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+                
+                {/* Time input with clock icon - icon click triggers input */}
+                <div style={{ position:"relative", width:"130px", flexShrink:0 }}>
+                  <i 
+                    className="bi bi-clock" 
+                    onClick={handleTimeIconClick}
+                    style={{ 
+                      position:"absolute", 
+                      left:"12px", 
+                      top:"50%", 
+                      transform:"translateY(-50%)", 
+                      color:c("#94a3b8","#475569"), 
+                      fontSize:"14px", 
+                      cursor:"pointer",
+                      zIndex:1,
+                      transition:"color 0.2s"
+                    }}
+                    onMouseEnter={e=>e.currentTarget.style.color="#6366f1"}
+                    onMouseLeave={e=>e.currentTarget.style.color=c("#94a3b8","#475569")}
+                  />
+                  <input 
+                    ref={timeInputRef}
+                    type="time" 
+                    style={{ ...inp({ paddingLeft:"38px" }), width:"100%", cursor:"pointer" }} 
+                    value={dueTime} 
+                    onChange={e=>setDueTime(e.target.value)} 
+                    onFocus={onF} 
+                    onBlur={onB}
+                  />
+                </div>
               </div>
               {dueDate&&(
                 <p style={{ fontSize:"11px", color:c("#94a3b8","#475569"), margin:"5px 0 0", display:"flex", alignItems:"center", gap:"4px" }}>
