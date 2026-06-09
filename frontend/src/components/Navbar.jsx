@@ -10,7 +10,11 @@ export default function Navbar() {
   const [hoverLogout, setHoverLogout] = useState(false);
   const isDark = theme === "dark";
 
+  // Get first name only
+  const firstName = user?.name?.split(" ")[0] || "User";
+  const avatarLetter = firstName[0]?.toUpperCase() || "U";
   const initials = user?.name?.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2) || "U";
+
   const c = (light, dark) => isDark ? dark : light;
 
   return (
@@ -20,7 +24,7 @@ export default function Navbar() {
         position: "fixed", top: "10px", left: "50%",
         transform: "translateX(-50%)",
         zIndex: 50,
-        width: "calc(100% - 3rem)",
+        width: "calc(100% - 1.5rem)",
         maxWidth: "720px",
         fontFamily: "'DM Sans',sans-serif",
       }}>
@@ -57,73 +61,126 @@ export default function Navbar() {
           </div>
 
           {/* Right controls */}
-          <div style={{ display:"flex", alignItems:"center", gap:"4px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
 
-            {/* Theme toggle */}
-            <button onClick={toggleTheme} style={{
-              width:"34px", height:"34px", borderRadius:"50%", border:"none", cursor:"pointer",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              background: "transparent",
-              color: c("#475569","#94a3b8"), fontSize:"15px",
-              transition:"background 0.18s",
-            }}
-              onMouseEnter={e=>e.currentTarget.style.background=c("rgba(0,0,0,0.06)","rgba(255,255,255,0.08)")}
-              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              <i className={`bi bi-${isDark?"sun":"moon"}`} style={{ color: isDark?"#f59e0b":"#6366f1" }} />
-            </button>
-
-            {/* Divider */}
-            <div style={{ width:"1px", height:"16px", background: c("rgba(0,0,0,0.1)","rgba(255,255,255,0.1)"), margin:"0 2px" }} />
-
-            {/* User pill */}
-            {user && (
-              <div style={{
-                display:"flex", alignItems:"center", gap:"7px",
-                padding:"3px 10px 3px 3px",
-                borderRadius:"100px",
-                background: c("rgba(0,0,0,0.04)","rgba(255,255,255,0.05)"),
-                border: `1px solid ${c("rgba(0,0,0,0.06)","rgba(255,255,255,0.07)")}`,
-              }}>
-                <div style={{
-                  width:"26px", height:"26px", borderRadius:"50%",
-                  background:"linear-gradient(135deg,#6366f1,#0ea5e9)",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  color:"white", fontSize:"10px", fontWeight:800, flexShrink:0,
-                }}>
-                  {initials}
-                </div>
-                <span style={{
-                  fontSize:"12.5px", fontWeight:600,
-                  color: c("#0f172a","#e2e8f0"),
-                  maxWidth:"90px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                }}>
-                  {user.name}
-                </span>
-              </div>
-            )}
-
-            {/* Logout pill button */}
-            <button
-              onMouseEnter={()=>setHoverLogout(true)}
-              onMouseLeave={()=>setHoverLogout(false)}
-              onClick={()=>{ logout(); navigate("/"); }}
+            {/* Theme Toggle Switch */}
+            <button 
+              onClick={toggleTheme} 
               style={{
-                display:"flex", alignItems:"center", gap:"5px",
-                padding:"7px 14px 7px 10px",
-                borderRadius:"100px", border:"none", cursor:"pointer",
-                fontSize:"12.5px", fontWeight:700, fontFamily:"'DM Sans',sans-serif",
-                transition:"all 0.18s",
-                background: hoverLogout
-                  ? "rgba(239,68,68,0.12)"
-                  : c("rgba(0,0,0,0.05)","rgba(255,255,255,0.07)"),
-                color: hoverLogout ? "#ef4444" : c("#64748b","#94a3b8"),
-                outline: hoverLogout
-                  ? "1px solid rgba(239,68,68,0.25)"
-                  : `1px solid ${c("rgba(0,0,0,0.07)","rgba(255,255,255,0.08)")}`,
+                width: "48px",
+                height: "26px",
+                borderRadius: "100px",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 4px",
+                background: isDark ? "#1e293b" : "#e2e8f0",
+                transition: "all 0.3s ease",
+                position: "relative",
+              }}
+            >
+              <div style={{
+                position: "absolute",
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                background: "white",
+                left: isDark ? "calc(100% - 24px)" : "2px",
+                transition: "left 0.3s ease",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
               }}>
-              <i className="bi bi-box-arrow-right" style={{ fontSize:"13px" }} />
-              <span className="logout-label">Logout</span>
+                <i className={`bi bi-${isDark ? "moon" : "sun"}`} style={{ 
+                  fontSize: "10px", 
+                  color: isDark ? "#6366f1" : "#f59e0b",
+                }} />
+              </div>
+              <i className="bi bi-sun" style={{ fontSize: "10px", color: "#f59e0b", opacity: isDark ? 0.5 : 1, marginLeft: "2px" }} />
+              <i className="bi bi-moon" style={{ fontSize: "10px", color: "#6366f1", opacity: isDark ? 1 : 0.5, marginRight: "2px" }} />
             </button>
+
+            {/* Divider - Hide on very small screens */}
+            <div style={{ 
+              width:"1px", 
+              height:"20px", 
+              background: c("rgba(0,0,0,0.1)","rgba(255,255,255,0.1)"), 
+              margin:"0 2px",
+              display: window.innerWidth < 480 ? "none" : "block",
+            }} />
+
+            {/* User section - Responsive */}
+            {user && (
+              <>
+                {/* Mobile: Avatar only */}
+                <div className="mobile-user" style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  padding: "3px",
+                  borderRadius: "100px",
+                  background: c("rgba(0,0,0,0.04)","rgba(255,255,255,0.05)"),
+                  border: `1px solid ${c("rgba(0,0,0,0.06)","rgba(255,255,255,0.07)")}`,
+                }}>
+                  <div style={{
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    flexShrink: 0,
+                  }}>
+                    {avatarLetter}
+                  </div>
+                  <span className="user-name" style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: c("#0f172a","#e2e8f0"),
+                    maxWidth: "100px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {firstName}
+                  </span>
+                </div>
+
+                {/* Logout Button - Separate pill with red color */}
+                <button
+                  onMouseEnter={()=>setHoverLogout(true)}
+                  onMouseLeave={()=>setHoverLogout(false)}
+                  onClick={()=>{ logout(); navigate("/"); }}
+                  style={{
+                    display:"flex",
+                    alignItems:"center",
+                    gap:"6px",
+                    padding:"6px 12px 6px 10px",
+                    borderRadius:"100px",
+                    border:"none",
+                    cursor:"pointer",
+                    fontSize:"12.5px",
+                    fontWeight:700,
+                    fontFamily:"'DM Sans',sans-serif",
+                    transition:"all 0.2s ease",
+                    background: hoverLogout
+                      ? "rgba(239,68,68,0.2)"
+                      : "rgba(239,68,68,0.1)",
+                    color: "#ef4444",
+                    border: "1px solid rgba(239,68,68,0.3)",
+                  }}>
+                  <i className="bi bi-box-arrow-right" style={{ fontSize:"13px" }} />
+                  <span className="logout-label">Logout</span>
+                </button>
+              </>
+            )}
           </div>
         </nav>
       </div>
@@ -133,8 +190,32 @@ export default function Navbar() {
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
-        .logout-label { display: none; }
-        @media(min-width: 480px) { .logout-label { display: inline; } }
+        
+        /* Mobile styles */
+        @media (max-width: 480px) {
+          .logout-label {
+            display: none !important;
+          }
+          .user-name {
+            display: none !important;
+          }
+          .mobile-user {
+            padding: 3px !important;
+          }
+        }
+        
+        /* Tablet and desktop */
+        @media (min-width: 481px) {
+          .logout-label {
+            display: inline !important;
+          }
+          .user-name {
+            display: inline !important;
+          }
+          .mobile-user {
+            padding: 3px 10px 3px 3px !important;
+          }
+        }
       `}</style>
     </>
   );

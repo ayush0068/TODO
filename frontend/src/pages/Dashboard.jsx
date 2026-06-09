@@ -41,7 +41,6 @@ export default function Dashboard() {
   };
   const handleDeleteAll = async () => {
     setDeleting(true);
-    // delete one by one since deleteAllTasks may not exist
     for (const t of allTasks) await deleteTask(t._id);
     setDeleting(false);
     setConfirmOpen(false);
@@ -95,7 +94,7 @@ export default function Dashboard() {
             )}
             <button className="btn-primary-grad" onClick={openAdd}>
               <i className="bi bi-plus-lg" />
-              <span>New Task</span>
+              <span className="btn-label">New Task</span>
             </button>
           </div>
         </div>
@@ -243,19 +242,18 @@ export default function Dashboard() {
         @keyframes spin      { to{transform:rotate(360deg)} }
 
         /* ── Header ── */
-        .dash-header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:1.4rem; flex-wrap:wrap; gap:0.75rem; }
+        .dash-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.4rem; flex-wrap:wrap; gap:0.75rem; }
         .dash-date   { font-size:10.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:#94a3b8; margin-bottom:4px; }
         .dash-greeting { font-family:'Playfair Display',serif; font-size:clamp(1.3rem,4vw,2rem); font-weight:800; line-height:1.15; margin:0; }
         .dash-sub    { font-size:12.5px; margin-top:3px; }
-        .dash-actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; flex-shrink:0; }
+        .dash-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
 
         /* ── Buttons ── */
-        .btn-ghost { display:flex; align-items:center; gap:5px; padding:8px 13px; border-radius:11px; border:1.5px solid; background:transparent; font-size:12.5px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.18s; }
-        .btn-danger { display:flex; align-items:center; gap:5px; padding:8px 13px; border-radius:11px; border:1.5px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.05); color:#ef4444; font-size:12.5px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.18s; }
-        .btn-danger:hover { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.5); }
-        .btn-primary-grad { display:flex; align-items:center; gap:6px; padding:9px 16px; border-radius:11px; border:none; cursor:pointer; background:linear-gradient(135deg,#6366f1,#0ea5e9); color:white; font-size:13px; font-weight:700; font-family:'DM Sans',sans-serif; box-shadow:0 5px 16px rgba(99,102,241,0.35); transition:transform 0.15s,box-shadow 0.15s; }
-        .btn-primary-grad:hover { transform:translateY(-1px); box-shadow:0 8px 22px rgba(99,102,241,0.45); }
-        .btn-label { display:inline; }
+        .btn-ghost { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:11px; border:1.5px solid; background:transparent; font-size:12.5px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.18s; }
+        .btn-danger { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:11px; border:1.5px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.08); color:#ef4444; font-size:12.5px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.18s; }
+        .btn-danger:hover { background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.5); transform:translateY(-1px); }
+        .btn-primary-grad { display:flex; align-items:center; gap:6px; padding:9px 18px; border-radius:11px; border:none; cursor:pointer; background:linear-gradient(135deg,#6366f1,#0ea5e9); color:white; font-size:13px; font-weight:700; font-family:'DM Sans',sans-serif; box-shadow:0 5px 16px rgba(99,102,241,0.35); transition:transform 0.15s,box-shadow 0.15s; }
+        .btn-primary-grad:hover { transform:translateY(-2px); box-shadow:0 8px 22px rgba(99,102,241,0.45); }
 
         /* ── Stats ── */
         .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:1.4rem; }
@@ -276,13 +274,21 @@ export default function Dashboard() {
            MOBILE  ≤ 640px
         ════════════════════════════ */
         @media (max-width: 640px) {
-          .dash-header    { flex-direction:column; align-items:flex-start; gap:0.8rem; }
-          .dash-actions   { width:100%; justify-content:flex-start; }
-          .btn-label      { display:none; }   /* icon-only on mobile */
+          .dash-header    { flex-direction:column; align-items:stretch; gap:1rem; }
+          .dash-actions   { width:100%; justify-content:flex-end; }
+          
+          /* Action buttons with labels on mobile */
           .btn-ghost,
-          .btn-danger     { padding:8px 10px; }
-          .btn-primary-grad { padding:8px 14px; font-size:12.5px; }
-
+          .btn-danger,
+          .btn-primary-grad { 
+            padding: 8px 12px; 
+            font-size: 12px;
+          }
+          
+          .btn-label {
+            display: inline !important; /* Show labels on mobile */
+          }
+          
           /* Stats: 2+2+1 layout */
           .stats-grid     { grid-template-columns:repeat(2,1fr); gap:7px; }
           /* Last stat (Progress) spans full width */
@@ -303,6 +309,17 @@ export default function Dashboard() {
         ════════════════════════════ */
         @media (max-width: 380px) {
           .task-grid { grid-template-columns:1fr; }
+          
+          .btn-ghost,
+          .btn-danger,
+          .btn-primary-grad { 
+            padding: 6px 10px; 
+            font-size: 11px;
+          }
+          
+          .btn-label {
+            font-size: 11px;
+          }
         }
       `}</style>
     </div>

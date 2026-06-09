@@ -89,7 +89,7 @@ export function useTasks() {
     try {
       const res = await taskAPI.create(data);
       setAllTasks((prev) => [res.data.task, ...prev]);
-      toast.success("Task created!");
+      toast.success(`Task "${res.data.task.title}" created!`);
     } catch (err) {
       if (err.response?.status === 401) { handleAuthError(); return; }
       toast.error(err.response?.data?.message || "Failed to create task.");
@@ -100,7 +100,7 @@ export function useTasks() {
     try {
       const res = await taskAPI.update(id, data);
       setAllTasks((prev) => prev.map((t) => (t._id === id ? res.data.task : t)));
-      toast.success("Task updated!");
+      toast.success(`Task "${res.data.task.title}" updated!`);
     } catch (err) {
       if (err.response?.status === 401) { handleAuthError(); return; }
       toast.error(err.response?.data?.message || "Failed to update task.");
@@ -111,7 +111,7 @@ export function useTasks() {
     setAllTasks((prev) => prev.filter((t) => t._id !== id)); // optimistic
     try {
       await taskAPI.delete(id);
-      toast.success("Task deleted.");
+      toast.success(`Task "${allTasks.find((t) => t._id === id)?.title}" deleted.`);
     } catch (err) {
       if (err.response?.status === 401) { handleAuthError(); return; }
       fetchTasks(); // revert
@@ -134,7 +134,7 @@ export function useTasks() {
     } catch (err) {
       if (err.response?.status === 401) { handleAuthError(); return; }
       fetchTasks(); // revert
-      toast.error("Failed to update task.");
+      toast.error(`Failed to update task "${allTasks.find((t) => t._id === id)?.title}".`);
     }
   };
 
